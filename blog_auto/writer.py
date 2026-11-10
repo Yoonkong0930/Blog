@@ -40,7 +40,7 @@ def write_post(topic: dict, date_str: str) -> dict:
 먼저 웹 검색으로 최신 정보를 확인한 다음 써.
 
 - 제목 후보: {topic['title']}
-- 분야: {topic.get('category', '')}
+- 분야: {topic.get('category') or '(주제를 보고 건강/의학, 일상, 여행 중에서 판단)'}
 - 키워드: {topic['keyword']}
 - 방향: {topic['angle']}
 - 지금 관심 가질 이유: {topic['why_now']}

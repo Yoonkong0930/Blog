@@ -25,6 +25,22 @@ SYSTEM = """너는 네이버 블로그 콘텐츠 기획자야.
 - 최근에 이미 쓴 주제와 겹치지 않을 것"""
 
 
+def manual_topics(text: str) -> list[dict]:
+    """사용자가 직접 정한 주제(쉼표나 줄바꿈으로 구분)를 글쓰기 단계가 쓰는 형식으로 바꿔요."""
+    items = [t.strip() for t in text.replace("\n", ",").split(",") if t.strip()]
+    return [
+        {
+            "category": "",
+            "keyword": t,
+            "title": t,
+            "angle": "사용자가 직접 정한 주제야. 이 주제를 검색하는 사람이 가장 궁금해할 내용을 중심으로 정리해.",
+            "why_now": "사용자가 직접 정한 주제",
+            "manual": True,
+        }
+        for t in items
+    ]
+
+
 def choose_categories(recent_topics: list[dict], count: int) -> list[str]:
     """최근에 덜 쓴 분야부터 골라서 분야가 골고루 돌아가게 해요."""
     used = Counter(t.get("category") for t in recent_topics)

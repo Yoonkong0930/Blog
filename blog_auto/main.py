@@ -6,6 +6,7 @@
 
 import argparse
 import json
+import os
 import re
 from datetime import timedelta
 
@@ -118,7 +119,18 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="API 없이 예시 글로 결과물만 만들어 보기")
     parser.add_argument("--count", type=int, default=POSTS_PER_DAY)
+    parser.add_argument(
+        "--topics",
+        default=os.environ.get("TOPICS", ""),
+        help="직접 정한 주제 (쉼표로 구분). 넣으면 자동 주제 선정을 건너뛰어요",
+    )
     args = parser.parse_args()
+
+    from .topics import manual_topics
+
+    my_topics = manual_topics(args.topics)
+    if my_topics:
+        args.count = len(my_topics)
 
     now = today_kst()
     date_str = now.strftime("%Y-%m-%d")
@@ -137,10 +149,13 @@ def main() -> None:
     from .trends import fetch_trends
     from .writer import write_post
 
-    trends = fetch_trends()
-    print(f"[1/3] 트렌드 {len(trends)}개를 가져왔어요.")
-
-    topics = pick_topics(trends, recent_topics(DEDUPE_DAYS), args.count, date_str)
+    if my_topics:
+        print(f"[1/3] 직접 정한 주제 {len(my_topics)}개로 글을 써요.")
+        topics = my_topics
+    else:
+        trends = fetch_trends()
+        print(f"[1/3] 트렌드 {len(trends)}개를 가져왔어요.")
+        topics = pick_topics(trends, recent_topics(DEDUPE_DAYS), args.count, date_str)
     day_dir.mkdir(parents=True, exist_ok=True)
     (day_dir / "topics.json").write_text(json.dumps(topics, ensure_ascii=False, indent=2), encoding="utf-8")
     print("[2/3] 오늘의 주제:", *[f"  - {t['title']}" for t in topics], sep="\n")

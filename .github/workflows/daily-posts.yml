@@ -7,8 +7,12 @@ on:
   #   - cron: "7 21 * * *"
   workflow_dispatch: # Actions 탭에서 'Run workflow' 버튼으로 바로 실행
     inputs:
+      topics:
+        description: "직접 정할 주제 (쉼표로 구분, 비워두면 자동 선정)"
+        required: false
+        default: ""
       count:
-        description: "만들 글 개수"
+        description: "자동 선정일 때 만들 글 개수 (주제를 직접 넣으면 주제 수만큼)"
         default: "2"
 
 permissions:
@@ -39,6 +43,7 @@ jobs:
           # 저장소 Settings → Variables에 넣으면 적용돼요 (비워두면 기본값)
           POSTS_PER_DAY: ${{ inputs.count || vars.POSTS_PER_DAY }}
           CATEGORIES: ${{ vars.CATEGORIES }}
+          TOPICS: ${{ inputs.topics }}
           PUBLISH_TIMES: ${{ vars.PUBLISH_TIMES }}
           BLOG_MODEL: ${{ vars.BLOG_MODEL }}
           DEDUPE_DAYS: ${{ vars.DEDUPE_DAYS }}
