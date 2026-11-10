@@ -41,13 +41,21 @@ def slugify(text: str) -> str:
     return re.sub(r"[^\w가-힣]+", "-", text).strip("-")[:40] or "post"
 
 
-def recent_titles(days: int) -> list[str]:
-    titles = []
+def recent_topics(days: int) -> list[dict]:
+    topics = []
     cutoff = (today_kst() - timedelta(days=days)).strftime("%Y-%m-%d")
     for f in sorted(POSTS_DIR.glob("*/topics.json")):
         if f.parent.name >= cutoff:
-            titles += [t["title"] for t in json.loads(f.read_text(encoding="utf-8"))]
-    return titles
+            topics += json.loads(f.read_text(encoding="utf-8"))
+    return topics
+
+
+def new_day_dir(date_str: str):
+    """같은 날 여러 번 실행하면 2026-11-10, 2026-11-10-2, ... 처럼 새 폴더를 써요."""
+    day_dir, n = POSTS_DIR / date_str, 2
+    while day_dir.exists():
+        day_dir, n = POSTS_DIR / f"{date_str}-{n}", n + 1
+    return day_dir
 
 
 def save_post(day_dir, n: int, post: dict, publish_at: str) -> dict:
@@ -128,7 +136,7 @@ def main() -> None:
 
     now = today_kst()
     date_str = now.strftime("%Y-%m-%d")
-    day_dir = POSTS_DIR / (f"_dry-run-{date_str}" if args.dry_run else date_str)
+    day_dir = POSTS_DIR / f"_dry-run-{date_str}" if args.dry_run else new_day_dir(date_str)
     times = [(PUBLISH_TIMES[i % len(PUBLISH_TIMES)]).strip() for i in range(args.count)]
 
     if args.dry_run:
@@ -146,7 +154,7 @@ def main() -> None:
     trends = fetch_trends()
     print(f"[1/3] 트렌드 {len(trends)}개를 가져왔어요.")
 
-    topics = pick_topics(trends, recent_titles(DEDUPE_DAYS), args.count, date_str)
+    topics = pick_topics(trends, recent_topics(DEDUPE_DAYS), args.count, date_str)
     day_dir.mkdir(parents=True, exist_ok=True)
     (day_dir / "topics.json").write_text(json.dumps(topics, ensure_ascii=False, indent=2), encoding="utf-8")
     print("[2/3] 오늘의 주제:", *[f"  - {t['title']}" for t in topics], sep="\n")

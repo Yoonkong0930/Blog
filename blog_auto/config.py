@@ -12,6 +12,9 @@ POSTS_DIR = ROOT / "posts"
 # 사용할 Claude 모델
 MODEL = os.environ.get("BLOG_MODEL") or "claude-sonnet-5-5"
 
+# 글 분야 (쉼표로 구분). 실행할 때마다 최근에 덜 쓴 분야부터 골라요
+CATEGORIES = [c.strip() for c in (os.environ.get("CATEGORIES") or "건강/의학,일상,여행").split(",") if c.strip()]
+
 # 하루에 만들 글 개수
 POSTS_PER_DAY = int(os.environ.get("POSTS_PER_DAY") or 2)
 

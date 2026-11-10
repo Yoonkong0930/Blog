@@ -6,6 +6,10 @@ on:
   # schedule:
   #   - cron: "7 21 * * *"
   workflow_dispatch: # Actions 탭에서 'Run workflow' 버튼으로 바로 실행
+    inputs:
+      count:
+        description: "만들 글 개수"
+        default: "2"
 
 permissions:
   contents: write
@@ -37,7 +41,8 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           # 저장소 Settings → Variables에 넣으면 적용돼요 (비워두면 기본값)
-          POSTS_PER_DAY: ${{ vars.POSTS_PER_DAY }}
+          POSTS_PER_DAY: ${{ inputs.count || vars.POSTS_PER_DAY }}
+          CATEGORIES: ${{ vars.CATEGORIES }}
           PUBLISH_TIMES: ${{ vars.PUBLISH_TIMES }}
           BLOG_MODEL: ${{ vars.BLOG_MODEL }}
           DEDUPE_DAYS: ${{ vars.DEDUPE_DAYS }}
