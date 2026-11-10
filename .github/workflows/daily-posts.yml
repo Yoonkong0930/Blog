@@ -1,25 +1,17 @@
-name: 매일 블로그 초안 만들기
+name: 블로그 초안 만들기
 
 on:
-  # 매일 자동 실행은 잠시 꺼둠. 다시 켜려면 아래 두 줄의 맨 앞 '#'을 지우세요.
-  # (매일 한국 시간 오전 6시 7분 = UTC 21:07)
-  # schedule:
-  #   - cron: "7 21 * * *"
-  workflow_dispatch: # Actions 탭에서 'Run workflow' 버튼으로 바로 실행
+  workflow_dispatch: # Actions 탭에서 'Run workflow' 버튼으로 실행
     inputs:
       topics:
-        description: "직접 정할 주제 (쉼표로 구분, 비워두면 자동 선정)"
-        required: false
-        default: ""
-      count:
-        description: "자동 선정일 때 만들 글 개수 (주제를 직접 넣으면 주제 수만큼)"
-        default: "2"
+        description: "글 주제 (쉼표로 구분). 예: 다이소 수납템 추천, 환절기 비염 관리법"
+        required: true
 
 permissions:
   contents: write
 
 concurrency:
-  group: daily-posts
+  group: blog-posts
   cancel-in-progress: false
 
 jobs:
@@ -37,16 +29,13 @@ jobs:
       - name: 패키지 설치
         run: pip install -r requirements.txt
 
-      - name: 주제 선정, 초안 작성
+      - name: 초안 작성
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # 저장소 Settings → Variables에 넣으면 적용돼요 (비워두면 기본값)
-          POSTS_PER_DAY: ${{ inputs.count || vars.POSTS_PER_DAY }}
-          CATEGORIES: ${{ vars.CATEGORIES }}
           TOPICS: ${{ inputs.topics }}
+          # 저장소 Settings → Variables에 넣으면 적용돼요 (비워두면 기본값)
           PUBLISH_TIMES: ${{ vars.PUBLISH_TIMES }}
           BLOG_MODEL: ${{ vars.BLOG_MODEL }}
-          DEDUPE_DAYS: ${{ vars.DEDUPE_DAYS }}
         run: python -m blog_auto.main
 
       - name: 결과물 저장
@@ -56,4 +45,9 @@ jobs:
           git add posts
           git diff --cached --quiet && exit 0
           git commit -m "블로그 초안: $(TZ=Asia/Seoul date +%Y-%m-%d)"
-          git push
+          # 실행 중에 저장소가 바뀌었어도 저장되도록 최신 내용을 받아온 뒤 올림
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && exit 0
+            sleep 5
+          done
+          exit 1

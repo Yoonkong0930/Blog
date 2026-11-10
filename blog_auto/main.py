@@ -1,4 +1,4 @@
-"""매일 실행: 주제 선정 → 초안 작성 → posts/날짜/ 폴더에 저장.
+"""매일 실행: 입력한 주제로 초안 작성 → posts/날짜/ 폴더에 저장.
 
 실행:  python -m blog_auto.main
 연습:  python -m blog_auto.main --dry-run   (API를 부르지 않고 예시 글로 결과물 모양만 확인)
@@ -8,11 +8,10 @@ import argparse
 import json
 import os
 import re
-from datetime import timedelta
 
 import markdown
 
-from .config import DEDUPE_DAYS, POSTS_DIR, POSTS_PER_DAY, PUBLISH_TIMES, today_kst
+from .config import POSTS_DIR, PUBLISH_TIMES, today_kst
 
 HTML_TEMPLATE = """<!doctype html>
 <html lang="ko"><head><meta charset="utf-8">
@@ -37,15 +36,6 @@ HTML_TEMPLATE = """<!doctype html>
 
 def slugify(text: str) -> str:
     return re.sub(r"[^\w가-힣]+", "-", text).strip("-")[:40] or "post"
-
-
-def recent_topics(days: int) -> list[dict]:
-    topics = []
-    cutoff = (today_kst() - timedelta(days=days)).strftime("%Y-%m-%d")
-    for f in sorted(POSTS_DIR.glob("*/topics.json")):
-        if f.parent.name >= cutoff:
-            topics += json.loads(f.read_text(encoding="utf-8"))
-    return topics
 
 
 def new_day_dir(date_str: str):
@@ -118,57 +108,49 @@ SAMPLE_POST = {
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="API 없이 예시 글로 결과물만 만들어 보기")
-    parser.add_argument("--count", type=int, default=POSTS_PER_DAY)
     parser.add_argument(
         "--topics",
         default=os.environ.get("TOPICS", ""),
-        help="직접 정한 주제 (쉼표로 구분). 넣으면 자동 주제 선정을 건너뛰어요",
+        help="글 주제 (쉼표로 구분). 예: 다이소 수납템 추천, 환절기 비염 관리법",
     )
     args = parser.parse_args()
 
     from .topics import manual_topics
 
-    my_topics = manual_topics(args.topics)
-    if my_topics:
-        args.count = len(my_topics)
+    topics = manual_topics(args.topics)
+    if args.dry_run and not topics:
+        topics = manual_topics("예시 주제 1, 예시 주제 2")
+    if not topics:
+        raise SystemExit("주제를 입력해 주세요. 예: --topics \"다이소 수납템 추천, 환절기 비염 관리법\"")
 
-    now = today_kst()
-    date_str = now.strftime("%Y-%m-%d")
-    day_dir = POSTS_DIR / f"_dry-run-{date_str}" if args.dry_run else new_day_dir(date_str)
-    times = [(PUBLISH_TIMES[i % len(PUBLISH_TIMES)]).strip() for i in range(args.count)]
+    date_str = today_kst().strftime("%Y-%m-%d")
+    times = [PUBLISH_TIMES[i % len(PUBLISH_TIMES)].strip() for i in range(len(topics))]
 
     if args.dry_run:
-        posts = [dict(SAMPLE_POST, title=f"{SAMPLE_POST['title']} {i + 1}") for i in range(args.count)]
+        day_dir = POSTS_DIR / f"_dry-run-{date_str}"
+        posts = [dict(SAMPLE_POST, title=f"{SAMPLE_POST['title']} {i + 1}") for i in range(len(topics))]
         entries = [save_post(day_dir, i + 1, p, f"{date_str} {times[i]}") for i, p in enumerate(posts)]
         write_index(day_dir, date_str, entries, [])
         print(f"예시 결과물을 만들었어요: {day_dir}")
         return
 
     # API를 쓰는 모듈은 실제 실행할 때만 불러옴 (dry-run은 API 키 없이 동작)
-    from .topics import pick_topics
-    from .trends import fetch_trends
     from .writer import write_post
 
-    if my_topics:
-        print(f"[1/3] 직접 정한 주제 {len(my_topics)}개로 글을 써요.")
-        topics = my_topics
-    else:
-        trends = fetch_trends()
-        print(f"[1/3] 트렌드 {len(trends)}개를 가져왔어요.")
-        topics = pick_topics(trends, recent_topics(DEDUPE_DAYS), args.count, date_str)
+    day_dir = new_day_dir(date_str)
     day_dir.mkdir(parents=True, exist_ok=True)
     (day_dir / "topics.json").write_text(json.dumps(topics, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("[2/3] 오늘의 주제:", *[f"  - {t['title']}" for t in topics], sep="\n")
+    print(f"[1/2] 주제 {len(topics)}개:", *[f"  - {t['title']}" for t in topics], sep="\n")
 
     entries, failures = [], []
     for i, topic in enumerate(topics):
         try:
             post = write_post(topic, date_str)
             entries.append(save_post(day_dir, i + 1, post, f"{date_str} {times[i]}"))
-            print(f"[3/3] 글 {i + 1} 완성: {post['title']}")
+            print(f"[2/2] 글 {i + 1} 완성: {post['title']}")
         except Exception as e:  # 한 편이 실패해도 나머지는 계속
             failures.append(f"{topic['title']} ({e})")
-            print(f"[3/3] 글 {i + 1} 실패: {e}")
+            print(f"[2/2] 글 {i + 1} 실패: {e}")
 
     write_index(day_dir, date_str, entries, failures)
     if not entries:
