@@ -1,0 +1,72 @@
+# 네이버 블로그 자동화
+
+매일 아침 6시(한국 시간)에 GitHub Actions가 자동으로 실행돼서 아래 일을 해요.
+
+1. **주제 선정**: 구글 트렌드(대한민국) 인기 검색어를 보고, Claude가 웹 검색으로 확인한 뒤 블로그 주제 3개를 골라요.
+   사건 사고나 정치 논쟁은 빼고, 최근 14일 동안 쓴 주제와 겹치지 않게 골라요.
+2. **초안 작성**: 주제마다 Claude가 최신 정보를 검색해서 2,000~3,000자 글을 써요. 제목, 태그, 요약도 함께 만들어요.
+3. **썸네일 생성**: 1080x1080 썸네일 이미지를 만들어요.
+4. 결과물을 `posts/날짜/` 폴더에 저장해요.
+
+발행은 직접 해요. 네이버 블로그는 글쓰기 API가 없어서, 만들어진 글을 붙여넣고 네이버의 **예약 발행** 기능으로 시간을 정하면 돼요. 하루 5분 정도 걸려요.
+
+## 처음 한 번만 설정
+
+1. [Anthropic Console](https://console.anthropic.com)에서 API 키를 만들고 결제 수단을 등록해요.
+2. 이 저장소의 **Settings → Secrets and variables → Actions → New repository secret**에서
+   이름 `ANTHROPIC_API_KEY`, 값에 API 키를 넣어 저장해요.
+3. **Actions** 탭 → **매일 블로그 초안 만들기** → **Run workflow**를 눌러 바로 한 번 실행해 봐요.
+   몇 분 뒤 `posts/오늘날짜/` 폴더가 생기면 성공이에요.
+
+그다음부터는 매일 아침 자동으로 실행돼요.
+
+## 매일 할 일
+
+`posts/오늘날짜/README.md`를 열면 오늘 글 3개와 예약 시간이 표로 정리되어 있어요.
+
+1. `post.md`를 읽고, **내 경험이나 의견을 한두 문단 더해요.** (AI 글을 그대로 올리면 네이버 검색에서 저품질로 판정받기 쉬워요.)
+2. 네이버 블로그 글쓰기에서 제목을 넣고 본문을 붙여넣어요.
+   - 서식(소제목, 표)을 살리려면 `post.html`을 내려받아 브라우저로 열고, 본문을 드래그해서 복사하면 돼요.
+3. `thumbnail.png`를 맨 위에 올리고 대표 이미지로 지정해요.
+4. 태그를 넣고, 발행 버튼 옆 **예약**에서 추천 시간(08:00 / 12:30 / 19:00)으로 설정해요.
+5. 본문의 `[이미지: ...]` 표시 자리에 어울리는 사진을 넣으면 더 좋아요.
+
+> 글 아래 **참고 자료** 링크로 숫자나 날짜 같은 사실을 한 번 확인한 뒤 발행해 주세요.
+
+## 설정 바꾸기
+
+저장소 **Settings → Secrets and variables → Actions → Variables** 탭에서 아래 이름으로 값을 넣으면 바뀌어요. 넣지 않으면 기본값을 써요.
+
+| 이름 | 기본값 | 설명 |
+|---|---|---|
+| `POSTS_PER_DAY` | `3` | 하루에 만들 글 개수 |
+| `PUBLISH_TIMES` | `08:00,12:30,19:00` | 예약 발행 추천 시간 |
+| `BLOG_MODEL` | `claude-opus-5-5` | 사용할 Claude 모델 |
+| `DEDUPE_DAYS` | `14` | 며칠 동안 같은 주제를 피할지 |
+
+실행 시간은 `.github/workflows/daily-posts.yml`의 `cron` 값으로 바꿔요. (UTC 기준이라 한국 시간에서 9시간을 빼야 해요.)
+
+## 비용
+
+주제 선정과 글 3편 작성에 웹 검색이 들어가서, Claude API 요금이 대략 하루 1~2달러(한 달 30~60달러) 정도 나와요. 실제 금액은 Console의 Usage 화면에서 확인하고, 비용을 줄이고 싶으면 `BLOG_MODEL`을 `claude-sonnet-5-5`로 바꿔 보세요. Console에서 월 사용 한도를 걸어두는 것도 추천해요.
+
+## 내 컴퓨터에서 실행하기
+
+```bash
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=내-API-키
+python -m blog_auto.main            # 실제 실행
+python -m blog_auto.main --dry-run  # API 없이 결과물 모양만 확인
+```
+
+## 파일 구조
+
+```
+blog_auto/
+  trends.py     구글 트렌드 인기 검색어 가져오기
+  topics.py     주제 3개 고르기 (Claude + 웹 검색)
+  writer.py     글 초안 쓰기 (Claude + 웹 검색)
+  thumbnail.py  썸네일 이미지 만들기
+  main.py       전체 순서 실행, posts/ 폴더에 저장
+posts/날짜/     매일 만들어지는 글
+```
