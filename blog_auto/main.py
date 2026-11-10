@@ -5,6 +5,7 @@
 """
 
 import argparse
+import hashlib
 import json
 import re
 from datetime import timedelta
@@ -12,6 +13,7 @@ from datetime import timedelta
 import markdown
 
 from .config import DEDUPE_DAYS, POSTS_DIR, POSTS_PER_DAY, PUBLISH_TIMES, today_kst
+from .images import find_photo
 from .thumbnail import make_thumbnail
 
 HTML_TEMPLATE = """<!doctype html>
@@ -52,6 +54,11 @@ def save_post(day_dir, n: int, post: dict, publish_at: str) -> dict:
     folder = day_dir / f"{n}-{slugify(post['title'])}"
     folder.mkdir(parents=True, exist_ok=True)
 
+    # 썸네일 배경 사진 (Pexels). 사진검색어가 없으면 첫 번째 태그로 찾음
+    seed = int(hashlib.md5(post["title"].encode()).hexdigest(), 16)
+    photo, credit = find_photo(post.get("image_query") or (post["tags"][0] if post["tags"] else ""), seed)
+    make_thumbnail(post["thumbnail_text"], post["tags"][0] if post["tags"] else "", folder / "thumbnail.png", photo)
+
     tags_line = " ".join(f"#{t}" for t in post["tags"])
     md = (
         f"# {post['title']}\n\n"
@@ -64,6 +71,8 @@ def save_post(day_dir, n: int, post: dict, publish_at: str) -> dict:
         md += "\n**참고 자료** (발행 전 사실 확인용, 본문에는 넣지 않아도 돼요)\n" + "".join(
             f"- {s}\n" for s in post["sources"]
         )
+    if credit:
+        md += f"\n**썸네일 사진**: {credit} (출처 표시는 의무가 아니에요)\n"
     (folder / "post.md").write_text(md, encoding="utf-8")
 
     body_html = markdown.markdown(post["body"], extensions=["tables"])
@@ -71,8 +80,6 @@ def save_post(day_dir, n: int, post: dict, publish_at: str) -> dict:
         HTML_TEMPLATE.format(title=post["title"], tags=tags_line, publish_at=publish_at, body=body_html),
         encoding="utf-8",
     )
-
-    make_thumbnail(post["thumbnail_text"], post["tags"][0] if post["tags"] else "", folder / "thumbnail.png")
     return {"folder": folder.name, "title": post["title"], "publish_at": publish_at, "tags": post["tags"]}
 
 
@@ -106,6 +113,7 @@ SAMPLE_POST = {
     "tags": ["연말정산", "연말정산미리보기", "홈택스", "절세", "13월의월급"],
     "thumbnail_text": "연말정산 미리보기 이용 방법",
     "summary": "홈택스 연말정산 미리보기로 예상 환급액을 확인하는 방법을 정리했어요.",
+    "image_query": "tax documents calculator",
     "sources": ["https://www.hometax.go.kr"],
     "body": "연말정산, 미리 준비하면 환급액이 달라져요.\n\n## 미리보기 서비스란?\n\n"
     "예시 본문입니다.\n\n| 항목 | 내용 |\n|---|---|\n| 기간 | 예시 |\n\n## 정리\n\n예시 정리 문단이에요.",

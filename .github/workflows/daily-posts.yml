@@ -34,11 +34,13 @@ jobs:
       - name: 주제 선정, 초안 작성, 썸네일 생성
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           # 저장소 Settings → Variables에 넣으면 적용돼요 (비워두면 기본값)
           POSTS_PER_DAY: ${{ vars.POSTS_PER_DAY }}
           PUBLISH_TIMES: ${{ vars.PUBLISH_TIMES }}
           BLOG_MODEL: ${{ vars.BLOG_MODEL }}
           DEDUPE_DAYS: ${{ vars.DEDUPE_DAYS }}
+          THUMB_IMAGE_OPACITY: ${{ vars.THUMB_IMAGE_OPACITY }}
         run: python -m blog_auto.main
 
       - name: 결과물 저장

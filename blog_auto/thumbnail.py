@@ -3,9 +3,9 @@
 import hashlib
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from .config import FONT_CANDIDATES
+from .config import FONT_CANDIDATES, THUMB_IMAGE_OPACITY
 
 SIZE = 1080
 
@@ -50,7 +50,7 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[st
     return lines
 
 
-def make_thumbnail(text: str, label: str, out_path: Path) -> Path:
+def make_thumbnail(text: str, label: str, out_path: Path, photo: Image.Image | None = None) -> Path:
     seed = int(hashlib.md5(text.encode()).hexdigest(), 16)
     top, bottom, accent = PALETTES[seed % len(PALETTES)]
 
@@ -59,6 +59,11 @@ def make_thumbnail(text: str, label: str, out_path: Path) -> Path:
     for y in range(SIZE):  # 세로 그라데이션 배경
         t = y / SIZE
         draw.line([(0, y), (SIZE, y)], fill=tuple(int(a + (b - a) * t) for a, b in zip(top, bottom)))
+
+    if photo is not None:  # 관련 사진을 정사각형으로 잘라 배경 위에 은은하게 겹침
+        photo = ImageOps.fit(photo.convert("RGB"), (SIZE, SIZE), Image.LANCZOS)
+        img = Image.blend(img, photo, THUMB_IMAGE_OPACITY)
+        draw = ImageDraw.Draw(img)
 
     margin = 110
     max_w = SIZE - margin * 2
