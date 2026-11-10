@@ -1,9 +1,10 @@
 name: 매일 블로그 초안 만들기
 
 on:
-  schedule:
-    # 매일 한국 시간 오전 6시 7분 (UTC 21:07)
-    - cron: "7 21 * * *"
+  # 매일 자동 실행은 잠시 꺼둠. 다시 켜려면 아래 두 줄의 맨 앞 '#'을 지우세요.
+  # (매일 한국 시간 오전 6시 7분 = UTC 21:07)
+  # schedule:
+  #   - cron: "7 21 * * *"
   workflow_dispatch: # Actions 탭에서 'Run workflow' 버튼으로 바로 실행
 
 permissions:
