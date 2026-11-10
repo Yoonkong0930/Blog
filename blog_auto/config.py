@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 POSTS_DIR = ROOT / "posts"
 
 # 사용할 Claude 모델
-MODEL = os.environ.get("BLOG_MODEL") or "claude-opus-5-5"
+MODEL = os.environ.get("BLOG_MODEL") or "claude-sonnet-5-5"
 
 # 하루에 만들 글 개수
 POSTS_PER_DAY = int(os.environ.get("POSTS_PER_DAY") or 3)

@@ -41,14 +41,14 @@
 |---|---|---|
 | `POSTS_PER_DAY` | `3` | 하루에 만들 글 개수 |
 | `PUBLISH_TIMES` | `08:00,12:30,19:00` | 예약 발행 추천 시간 |
-| `BLOG_MODEL` | `claude-opus-5-5` | 사용할 Claude 모델 |
+| `BLOG_MODEL` | `claude-sonnet-5-5` | 사용할 Claude 모델 (`claude-opus-5-5`는 품질이 더 좋지만 비용이 약 2배) |
 | `DEDUPE_DAYS` | `14` | 며칠 동안 같은 주제를 피할지 |
 
 실행 시간은 `.github/workflows/daily-posts.yml`의 `cron` 값으로 바꿔요. (UTC 기준이라 한국 시간에서 9시간을 빼야 해요.)
 
 ## 비용
 
-주제 선정과 글 3편 작성에 웹 검색이 들어가서, Claude API 요금이 대략 하루 1~2달러(한 달 30~60달러) 정도 나와요. 실제 금액은 Console의 Usage 화면에서 확인하고, 비용을 줄이고 싶으면 `BLOG_MODEL`을 `claude-sonnet-5-5`로 바꿔 보세요. Console에서 월 사용 한도를 걸어두는 것도 추천해요.
+주제 선정과 글 3편 작성에 웹 검색이 들어가서, Claude API 요금이 대략 하루 0.5~0.8달러(한 달 15~25달러) 정도 나올 것으로 예상해요. 실제 금액은 Console의 Usage 화면에서 확인하세요. Console에서 월 사용 한도를 걸어두는 것도 추천해요.
 
 ## 내 컴퓨터에서 실행하기
 
