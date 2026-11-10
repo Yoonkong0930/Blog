@@ -29,9 +29,7 @@ FORMAT = """아래 형식 그대로 답해줘. 형식 밖의 말은 쓰지 마.
 
 제목: (최종 글 제목)
 태그: (네이버 태그 8~10개, 쉼표로 구분, # 없이)
-썸네일: (썸네일에 크게 넣을 문구, 15자 이내)
 요약: (검색 결과에 보일 한 줄 요약)
-사진검색: (썸네일 배경 사진을 찾을 영어 검색어 2~3단어, 예: kimchi cabbage)
 참고: (참고한 사이트 주소들, 쉼표로 구분)
 ---
 (마크다운 본문)"""
@@ -63,9 +61,7 @@ def parse_post(text: str) -> dict:
     return {
         "title": field("제목"),
         "tags": [t.strip().lstrip("#") for t in field("태그").split(",") if t.strip()],
-        "thumbnail_text": field("썸네일") or field("제목"),
         "summary": field("요약"),
-        "image_query": field("사진검색"),
         "sources": [s.strip() for s in field("참고").split(",") if s.strip()],
         "body": body.lstrip("-\n").strip(),
     }
