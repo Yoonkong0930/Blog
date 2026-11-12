@@ -63,7 +63,7 @@ def save_post(day_dir, n: int, post: dict, publish_at: str) -> dict:
         )
     (folder / "post.md").write_text(md, encoding="utf-8")
 
-    body_html = markdown.markdown(post["body"], extensions=["tables"])
+    body_html = markdown.markdown(post["body"], extensions=["tables", "nl2br"])  # 줄바꿈을 그대로 살림
     (folder / "post.html").write_text(
         HTML_TEMPLATE.format(title=post["title"], tags=tags_line, publish_at=publish_at, body=body_html),
         encoding="utf-8",
